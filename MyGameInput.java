@@ -7,14 +7,17 @@ public class MyGameInput  implements Serializable
 // command options
    static final int NO_COMMAND=-1;
    static final int JOIN_GAME=1;
-   static final int SELECT_SQUARE=2;
-   static final int DISCONNECTING=3;
-   static final int RESETTING=4;
+   static final int ROLL_DICE = 2;
+   static final int KEEP_DIE = 3;
+   static final int RELEASE_DIE = 4;
+   static final int DISCONNECTING=5;
+   static final int RESETTING=6;
    
    int command=NO_COMMAND;  
    
    String myName;
-   int row, col;   
+   int index = -1;
+   
    
    public void setName(String name)
    {
