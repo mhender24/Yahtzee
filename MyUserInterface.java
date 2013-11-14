@@ -4,6 +4,7 @@ import gameNet.GameNet_UserInterface;
 import gameNet.GamePlayer;
 
 import java.awt.BorderLayout;
+import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -15,6 +16,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.Serializable;
 
+import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -23,7 +25,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
-import javax.swing.JTextArea;
+import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 
 public class MyUserInterface extends JFrame implements ActionListener,
@@ -32,12 +34,18 @@ public class MyUserInterface extends JFrame implements ActionListener,
 	private static final long serialVersionUID = 1L;
 	private static final int DICE_SIZE = 80;
 	private static final int NUM_OF_DICE = 5;
+	private static final int MAX_PLAYERS = 2;
 	private int[] diceVal;
-	private JPanel gamePanel;
+	CardLayout cardLayoutMgr = new CardLayout();
+	JPanel scorePanel = new JPanel();
+	JPanel gameDisplay = new JPanel();
+	JPanel scoreDisplay = new JPanel();
+	JLabel playerScoreArr[] = new JLabel[MAX_PLAYERS];
 	private JButton[] keepArr = new JButton[5];
 	private JButton[] releaseArr = new JButton[5];
 	private JButton keepAll = new JButton("Keep All");
 	private JButton rollDice = new JButton("Roll Dice");
+	private JRadioButton[] radioSelection = new JRadioButton[13];
 	private GamePlayer myGamePlayer = null;
 	private MyGame myGame = null;
 	private String myName = "";
@@ -59,7 +67,7 @@ public class MyUserInterface extends JFrame implements ActionListener,
 	private void displayDice(int[] diceVal, Graphics g)
 	{
 		int height = 800;
-		
+
 		for (int i = 0; i < diceVal.length; i++)
 		{
 			switch (diceVal[i])
@@ -95,17 +103,6 @@ public class MyUserInterface extends JFrame implements ActionListener,
 		}
 	}
 
-	private void loadKeepArr()
-	{
-
-	}
-
-	public static void main(String[] Args)
-	{
-		MyUserInterface ui = new MyUserInterface();
-		ui.display();
-	}
-
 	private void sendMessage(int command)
 	{
 		myGameInput.command = command;
@@ -123,18 +120,24 @@ public class MyUserInterface extends JFrame implements ActionListener,
 		myGameInput.index = index;
 		sendMessage(MyGameInput.RELEASE_DIE);
 	}
-
+	private void sendCheckScoreMessage(int index)
+	{
+		myGameInput.index = index;
+		sendMessage(MyGameInput.CHECK_SCORE);
+	}
 	@Override
 	public void actionPerformed(ActionEvent e)
 	{
 		String action = e.getActionCommand();
+		boolean flag = false;
+		int rollCounter =0;
 
 		for (int i = 0; i < keepArr.length; i++)
 		{
 			if (e.getSource() == keepArr[i])
 			{
-				keepArr[i].setVisible(false);
-				releaseArr[i].setVisible(true);
+				// keepArr[i].setVisible(false);
+				// releaseArr[i].setVisible(true);
 				sendKeepMessage(i);
 			}
 		}
@@ -143,19 +146,41 @@ public class MyUserInterface extends JFrame implements ActionListener,
 		{
 			if (e.getSource() == releaseArr[i])
 			{
-				keepArr[i].setVisible(true);
-				releaseArr[i].setVisible(false);
+				// keepArr[i].setVisible(true);
+				// releaseArr[i].setVisible(false);
 				sendReleaseMessage(i);
 			}
 		}
 
 		if (action.equals("Keep All"))
 		{
-
+			cardLayoutMgr.show(this.getContentPane(), "ScoreDisplay");
 		}
 		else if (action.equals("Roll Dice"))
 		{
+			rollCounter = myGame.getRollCount();
+
+			if(rollCounter==2)    //allows for 3 rolls before switching to scoreDisplay
+			{
+				cardLayoutMgr.show(this.getContentPane(), "ScoreDisplay");
+			}
 			sendMessage(MyGameInput.ROLL_DICE);
+		}
+		else if (action.equals("Submit"))
+		{
+			for(int i = 0; i< radioSelection.length; i++)
+			{
+				if(radioSelection[i].isSelected())
+				{
+					flag = myGame.isLegal(i);
+					if(flag)
+					{
+						cardLayoutMgr.show(this.getContentPane(), "GameDisplay");
+						sendCheckScoreMessage(i);
+					}
+
+				}
+			}
 		}
 	}
 
@@ -164,12 +189,34 @@ public class MyUserInterface extends JFrame implements ActionListener,
 	{
 		MyGameOutput myGameOutput = (MyGameOutput) ob;
 		myGame = myGameOutput.myGame;
-
+		diceVal = myGame.getDiceVal();
+		boolean[] keepFlag = myGame.getKeepVal();
+		int numOfPlayers = myGame.getNumOfPlayers();
 		// String msg = myGame.getStatus(myName);
 		// String turnMsg = myGame.getTurnInfo(myName);
 		// String extendedName = myGame.getExtendedName(myName);
+		for (int i = 0; i < keepFlag.length; i++)
+		{
+			if (keepFlag[i] == true)
+			{
+				keepArr[i].setVisible(false);
+				releaseArr[i].setVisible(true);
+			}
+			else
+			{
+				keepArr[i].setVisible(true);
+				releaseArr[i].setVisible(false);
+			}
+		}
 
-		diceVal = myGame.getDiceVal();
+		for (int i = 0; i < numOfPlayers; i++)
+		{
+			//System.out.println("in UI getmessge" + myGame.getPlayerScore(i));
+			String playerName = myGame.getPlayerName(i) + ": "
+					+ myGame.getPlayerScore(i);
+			if (playerScoreArr[i] != null)
+				playerScoreArr[i].setText(playerName);
+		}
 		
 		repaint();
 
@@ -182,6 +229,12 @@ public class MyUserInterface extends JFrame implements ActionListener,
 		myName = gamePlayer.getPlayerName();
 		myGameInput.setName(myName);
 
+		for (int i = 0; i < keepArr.length; i++)
+		{
+			keepArr[i] = new JButton("Keep");
+			releaseArr[i] = new JButton("Release");
+		}
+
 		sendMessage(MyGameInput.JOIN_GAME);
 
 		// addWindowListener(this.closeMonitor);
@@ -189,14 +242,34 @@ public class MyUserInterface extends JFrame implements ActionListener,
 		setVisible(true);
 	}
 
+	//private void scoreDisplay()
+	//{
+		//setSize(1200,800);
+
+		//setDefaultCloseOperation(EXIT_ON_CLOSE);
+		//setVisible(true);
+	//}
+	private void gameDisplay()
+	{
+		
+	}
+	
+	private void scoreDisplay()
+	{
+		
+	}
+	
+	
 	private void display()
 	{
-		setLayout(new BorderLayout());
-
 		setSize(1200, 800);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
-
-		JPanel scorePanel = new JPanel();
+		
+		setLayout(cardLayoutMgr);
+		
+		gameDisplay.setLayout(new BorderLayout());
+		scoreDisplay.setLayout(new BorderLayout());
+		
 		scorePanel.setLayout(new GridLayout(5, 1));
 		scorePanel.setBackground(Color.red);
 
@@ -212,16 +285,7 @@ public class MyUserInterface extends JFrame implements ActionListener,
 		scoreLabel.setFont(new Font(Font.SERIF, Font.PLAIN, 30));
 		scorePanel.add(scoreLabel);
 
-		JLabel playerScoreArr[] = new JLabel[4];
-		for (int i = 0; i < playerScoreArr.length; i++)
-		{
-			String playerName = "Player " + i + "    "; // need to change output
-			playerScoreArr[i] = new JLabel(playerName);
-			playerScoreArr[i].setFont(new Font(Font.SERIF, Font.PLAIN, 15));
-			scorePanel.add(playerScoreArr[i]);
-		}
-
-		gamePanel = new JPanel();
+		JPanel gamePanel = new JPanel();
 		gamePanel.setLayout(new GridLayout(5, 1, 0, 0));
 		gamePanel.setBackground(Color.blue);
 
@@ -236,9 +300,9 @@ public class MyUserInterface extends JFrame implements ActionListener,
 		typeArea.setBackground(Color.green);
 		chatPanel.add(typeArea);
 
-		JTextArea chat = new JTextArea(8, 60);
-		chat.setBackground(Color.yellow);
-		chatPanel.add(chat);
+		// JTextArea chat = new JTextArea(8, 60);
+		// chat.setBackground(Color.yellow);
+		// chatPanel.add(chat);
 
 		JMenu exitPanel = new JMenu("File");
 
@@ -251,23 +315,61 @@ public class MyUserInterface extends JFrame implements ActionListener,
 		bar.add(exitPanel);
 		setJMenuBar(bar);
 
-		add(scorePanel, BorderLayout.EAST);
-		add(gamePanel, BorderLayout.CENTER);
-		add(optionPanel, BorderLayout.SOUTH);
+		for (int i = 0; i < MAX_PLAYERS; i++)
+		{
+			playerScoreArr[i] = new JLabel();
+			playerScoreArr[i].setFont(new Font(Font.SERIF, Font.PLAIN, 15));
+			scorePanel.add(playerScoreArr[i]);
+		}
+		sendMessage(MyGameInput.NO_COMMAND); // updates score labels
+
+		gameDisplay.add(scorePanel, BorderLayout.EAST);
+		gameDisplay.add(gamePanel, BorderLayout.CENTER);
+		gameDisplay.add(optionPanel, BorderLayout.SOUTH);
 		// add(dicePanel, BorderLayout.WEST);
 
 		for (int i = 0; i < 5; i++) // test
 		{
-			keepArr[i] = new JButton("Keep");
 			keepArr[i].setBackground(Color.blue);
 			keepArr[i].addActionListener(this);
 			gamePanel.add(keepArr[i]);
-			releaseArr[i] = new JButton("Release");
 			releaseArr[i].addActionListener(this);
 			releaseArr[i].setVisible(false);
 			gamePanel.add(releaseArr[i]);
 		}
 
+		String[] strScoreTitle = {"Aces", "Twos", "Threes", "Fours", "Fives", "Sixes", "3 of a Kind", "4 of a Kind",
+				"Full House", "Sm. Straight", "Lg. Straight", "Yahtzee", "Chance"};
+		JLabel[] labelScoreTitle = new JLabel[13];
+		JLabel[] blankLabel = new JLabel[13]; 
+		ButtonGroup scoreList = new ButtonGroup();
+		radioSelection = new JRadioButton[13];
+		JButton submit = new JButton("Submit");
+		JPanel scoreCard = new JPanel();
+		scoreCard.setLayout(new GridLayout(14,3,0,0));
+		scoreDisplay.setLayout(new BorderLayout());
+		for(int i =0; i<labelScoreTitle.length; i++)
+		{
+			blankLabel[i] = new JLabel("                     ");       //creates space for dice
+			labelScoreTitle[i] = new JLabel(strScoreTitle[i]);
+			radioSelection[i] = new JRadioButton(strScoreTitle[i], false);
+			radioSelection[i].addActionListener(this);
+			labelScoreTitle[i].setFont(new Font(Font.SERIF, Font.PLAIN, 40));
+			scoreList.add(radioSelection[i]);
+			scoreCard.add(blankLabel[i]);
+			scoreCard.add(labelScoreTitle[i]);
+			scoreCard.add(radioSelection[i]);
+		}
+		
+		submit.addActionListener(this);
+		scoreCard.add(submit);
+		scoreDisplay.add(scoreCard, BorderLayout.CENTER);
+		
+		add("GameDisplay", gameDisplay);
+		add("ScoreDisplay", scoreDisplay);
+		
+		cardLayoutMgr.show(this.getContentPane(), "GameDisplay");
+		
 		setVisible(true);
 	}
 

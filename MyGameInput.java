@@ -10,10 +10,11 @@ public class MyGameInput  implements Serializable
    static final int ROLL_DICE = 2;
    static final int KEEP_DIE = 3;
    static final int RELEASE_DIE = 4;
-   static final int DISCONNECTING=5;
-   static final int RESETTING=6;
+   static final int CHECK_SCORE = 5;
+   static final int DISCONNECTING=6;
+   static final int RESETTING=7;
    
-   int command=NO_COMMAND;  
+   int command=NO_COMMAND;
    
    String myName;
    int index = -1;
