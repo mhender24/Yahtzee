@@ -11,8 +11,9 @@ public class MyGameInput  implements Serializable
    static final int KEEP_DIE = 3;
    static final int RELEASE_DIE = 4;
    static final int CHECK_SCORE = 5;
-   static final int DISCONNECTING=6;
-   static final int RESETTING=7;
+   static final int PASS_SCORE = 6;
+   static final int DISCONNECTING=7;
+   static final int RESETTING=8;
    
    int command=NO_COMMAND;
    
