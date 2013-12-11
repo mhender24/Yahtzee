@@ -15,10 +15,12 @@ public class YahtzeeUtil implements Serializable
 
     public Dice[] initializeDice(Dice[] dice)
     {
+        Random diceRoll = new Random();
         Dice[] d = new Dice[5];
         for (int i = 0; i < d.length; i++)
         {
             d[i] = new Dice();
+            d[i].value = diceRoll.nextInt(6) + 1;
         }
         return d;
     }
@@ -112,6 +114,16 @@ public class YahtzeeUtil implements Serializable
             return temp;
         }
         return dice;
+    }
+    
+    public Dice[] setAllRelease(Dice[] dice)
+    {
+    	Dice[] temp = dice;
+    	for(int i = 0; i<temp.length; i++)
+    	{
+    		temp[i].keep=false;
+    	}
+    	return temp;
     }
 
     public void gameOver()

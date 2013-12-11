@@ -6,12 +6,10 @@ import gameNet.GamePlayer;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.GridLayout;
 import java.awt.Image;
-import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.Serializable;
@@ -33,13 +31,13 @@ public class MyUserInterface extends JFrame implements ActionListener,
 {
     private static final long serialVersionUID = 1L;
     private static final int DICE_SIZE = 80;
-    private static final int NUM_OF_DICE = 5;
     private static final int MAX_PLAYERS = 2;
     private int[] diceVal;
     private CardLayout cardLayoutMgr = new CardLayout();
     private JPanel scorePanel = new JPanel();
     private JPanel gameDisplay = new JPanel();
     private JPanel scoreDisplay = new JPanel();
+    private JPanel gameOverDisplay = new JPanel();
     private JLabel playerScoreArr[] = new JLabel[MAX_PLAYERS];
     private JButton[] keepArr = new JButton[5];
     private JButton[] releaseArr = new JButton[5];
@@ -148,14 +146,14 @@ public class MyUserInterface extends JFrame implements ActionListener,
                 sendReleaseMessage(i);
         }
 
-        if (action.equals("Keep All"))
-            cardLayoutMgr.show(this.getContentPane(), "ScoreDisplay");
+      //  if (action.equals("Keep All"))
+      //      cardLayoutMgr.show(this.getContentPane(), "ScoreDisplay");
         
-        else if (action.equals("Roll Dice"))
+        if (action.equals("Roll Dice"))
         {
-            rollCounter = myGame.getRollCount();
+            rollCounter = myGame.getRollCounter();
 
-            if(rollCounter==2)    //allows for 3 rolls before switching to scoreDisplay
+            if(rollCounter==2) //allows for 3 rolls before switching to scoreDisplay
                 cardLayoutMgr.show(this.getContentPane(), "ScoreDisplay");
             sendMessage(MyGameInput.ROLL_DICE);
         }
@@ -177,9 +175,8 @@ public class MyUserInterface extends JFrame implements ActionListener,
         }
         else if(action.equals("Pass"))
         {
+        	cardLayoutMgr.show(this.getContentPane(), "GameDisplay");
             sendPassScoreMessage();
-            cardLayoutMgr.show(this.getContentPane(), "GameDisplay");
-
         }
     }
 
@@ -191,6 +188,7 @@ public class MyUserInterface extends JFrame implements ActionListener,
         diceVal = myGame.getDiceVal();
         boolean[] keepFlag = myGame.getKeepVal();
         int numOfPlayers = myGame.getNumOfPlayers();
+        int currRound = myGame.getCurrentRound();
         // String msg = myGame.getStatus(myName);
         // String turnMsg = myGame.getTurnInfo(myName);
         // String extendedName = myGame.getExtendedName(myName);
@@ -215,6 +213,10 @@ public class MyUserInterface extends JFrame implements ActionListener,
             if (playerScoreArr[i] != null)
                 playerScoreArr[i].setText(playerName);
         }
+        
+        if(currRound == 13)
+        	cardLayoutMgr.show(this.getContentPane(), "GameOverDisplay");
+        
         repaint();
     }
 
@@ -232,26 +234,16 @@ public class MyUserInterface extends JFrame implements ActionListener,
         }
 
         sendMessage(MyGameInput.JOIN_GAME);
-
         // addWindowListener(this.closeMonitor);
-        display();
+        gameDisplay();
+        scoreDisplay();
+        gameOverDisplay();
         setVisible(true);
     }
 
     private void gameDisplay()
     {
-        
-    }
-    
-    private void scoreDisplay()
-    {
-        
-    }
-    
-    
-    private void display()
-    {
-        setSize(1200, 800);
+    	setSize(1200, 800);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         
         setLayout(cardLayoutMgr);
@@ -268,7 +260,7 @@ public class MyUserInterface extends JFrame implements ActionListener,
         rollDice.addActionListener(this);
         optionPanel.add(rollDice);
         keepAll.addActionListener(this);
-        optionPanel.add(keepAll);
+        //optionPanel.add(keepAll);
 
         JLabel scoreLabel = new JLabel("Current Score");
         scoreLabel.setFont(new Font(Font.SERIF, Font.PLAIN, 30));
@@ -308,11 +300,11 @@ public class MyUserInterface extends JFrame implements ActionListener,
         gameDisplay.add(gamePanel, BorderLayout.CENTER);
         gameDisplay.add(optionPanel, BorderLayout.SOUTH);
 
-        JLabel[] blankLabel2 = new JLabel[5];              //provides space for dice
+        JLabel[] blankLabel2 = new JLabel[5]; //provides space for dice
 
         for (int i = 0; i < 5; i++) // test
         {
-            blankLabel2[i]= new JLabel("                 ");
+            blankLabel2[i]= new JLabel(" ");
             gamePanel.add(blankLabel2[i]);
             keepArr[i].setBackground(Color.blue);
             keepArr[i].addActionListener(this);
@@ -321,11 +313,18 @@ public class MyUserInterface extends JFrame implements ActionListener,
             releaseArr[i].setVisible(false);
             gamePanel.add(releaseArr[i]);
         }
+        add("GameDisplay", gameDisplay);
+        add("ScoreDisplay", scoreDisplay);
+        add("GameOverDisplay", gameOverDisplay);
 
-        String[] strScoreTitle = {"Aces", "Twos", "Threes", "Fours", "Fives", "Sixes", "3 of a Kind", "4 of a Kind",
+    }
+    
+    private void scoreDisplay()
+    {
+    	String[] strScoreTitle = {"Aces", "Twos", "Threes", "Fours", "Fives", "Sixes", "3 of a Kind", "4 of a Kind",
                 "Full House", "Sm. Straight", "Lg. Straight", "Yahtzee", "Chance"};
-        JLabel[] labelScoreTitle = new JLabel[13];            //provides space for dice
-        JLabel[] blankLabel = new JLabel[13]; 
+        JLabel[] labelScoreTitle = new JLabel[13]; //provides space for dice
+        JLabel[] blankLabel = new JLabel[13];
         ButtonGroup scoreList = new ButtonGroup();
         radioSelection = new JRadioButton[13];
         JButton submit = new JButton("Submit");
@@ -335,7 +334,7 @@ public class MyUserInterface extends JFrame implements ActionListener,
         scoreDisplay.setLayout(new BorderLayout());
         for(int i =0; i<labelScoreTitle.length; i++)
         {
-            blankLabel[i] = new JLabel("                     ");      
+            blankLabel[i] = new JLabel(" ");
             labelScoreTitle[i] = new JLabel(strScoreTitle[i]);
             radioSelection[i] = new JRadioButton(strScoreTitle[i], false);
             radioSelection[i].addActionListener(this);
@@ -345,21 +344,25 @@ public class MyUserInterface extends JFrame implements ActionListener,
             scoreCard.add(labelScoreTitle[i]);
             scoreCard.add(radioSelection[i]);
         }
-        
         submit.addActionListener(this);
         pass.addActionListener(this);
         scoreCard.add(submit);
         scoreCard.add(pass);
         scoreDisplay.add(scoreCard, BorderLayout.CENTER);
-        
-        add("GameDisplay", gameDisplay);
-        add("ScoreDisplay", scoreDisplay);
-        
-        cardLayoutMgr.show(this.getContentPane(), "GameDisplay");
-        
-        setVisible(true);
     }
-
+    
+    private void gameOverDisplay()
+    {
+    	String winningPlayerName = "The game winner is: " + myGame.gameWinner();
+    	gameOverDisplay.setLayout(new GridLayout(2,1));
+    	JLabel gameOver = new JLabel("GAME OVER");
+    	JLabel gameWinner = new JLabel(winningPlayerName);
+    	gameOver.setFont(new Font(Font.SERIF, Font.PLAIN, 80));
+    	gameWinner.setFont(new Font(Font.SERIF, Font.PLAIN, 40));
+    	gameOverDisplay.add(gameOver);
+    	gameOverDisplay.add(gameWinner);
+    }
+    
     public void paint(Graphics g)
     {
         super.paint(g);
@@ -367,5 +370,4 @@ public class MyUserInterface extends JFrame implements ActionListener,
 
         displayDice(diceVal, g);
     }
-
 }

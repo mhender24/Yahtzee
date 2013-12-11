@@ -86,6 +86,7 @@ public class MyGame extends GameNet_CoreGame implements Serializable
         {
         case MyGameInput.JOIN_GAME:
             dice = yu.initializeDice(dice);
+            dice = yu.rollDice(playerIndex, dice);
             break;
         case MyGameInput.ROLL_DICE:
             dice = yu.rollDice(playerIndex, dice);
@@ -100,6 +101,8 @@ public class MyGame extends GameNet_CoreGame implements Serializable
             score = yu.checkScore(myGameInput.index, dice);
             currPlayers.get(playerIndex).score[myGameInput.index] = score;      //places score in player score arr
             currPlayers.get(playerIndex).total = updatePlayerScore(playerIndex);  //totals score for player
+            dice = yu.setAllRelease(dice);
+            dice = yu.rollDice(playerIndex, dice);
             yu.incremenetCurrTurn();
             if(playerIndex == (MAX_PLAYERS-1))
             {
@@ -110,6 +113,9 @@ public class MyGame extends GameNet_CoreGame implements Serializable
             }
             break;
         case MyGameInput.PASS_SCORE:
+            yu.resetRollCounter();
+            dice = yu.setAllRelease(dice);
+            dice = yu.rollDice(playerIndex, dice);
             yu.incremenetCurrTurn();
             if(playerIndex == (MAX_PLAYERS-1))
             {
@@ -118,7 +124,6 @@ public class MyGame extends GameNet_CoreGame implements Serializable
                 if(currRound == MAX_ROUNDS)
                     yu.gameOver();
             }
-            yu.resetRollCounter();
             break;
         case MyGameInput.DISCONNECTING:
             currPlayers.remove(myGameInput.myName);
@@ -126,6 +131,7 @@ public class MyGame extends GameNet_CoreGame implements Serializable
         case MyGameInput.RESETTING:
             break;
         default:
+        	break;
         }
 
         MyGameOutput myGameOutput = new MyGameOutput(this);
@@ -158,6 +164,11 @@ public class MyGame extends GameNet_CoreGame implements Serializable
             diceVal[i] = dice[i].value;
         }
         return diceVal;
+    }
+    
+    public int getCurrentRound()
+    {
+    	return currRound;
     }
 
     public boolean[] getKeepVal() // used by UI to track player keep/release
@@ -197,7 +208,18 @@ public class MyGame extends GameNet_CoreGame implements Serializable
         return newTotal;
     }
     
-    public int getRollCount()
+    public String gameWinner()
+    {
+		Player temp = currPlayers.get(0);
+    	for(int i = 0; i<currPlayers.size()-1; i++)
+    	{
+    		if(temp.total < currPlayers.get(i+1).total)
+    			temp = currPlayers.get(i+1);
+    	}
+    	return temp.name;
+    }
+    
+    public int getRollCounter()
     {
         return yu.getRollCounter();
     }
